@@ -10,7 +10,13 @@ export const loadContract = async (name, provider) => {
 
   _contract.setProvider(provider);
 
-  const deployedContract = await _contract.deployed();
+  let deployedContract = null;
+
+  try {
+    deployedContract = await _contract.deployed();
+  } catch (error) {
+    console.error("You are connected to the wrong network");
+  }
 
   return deployedContract;
 };
