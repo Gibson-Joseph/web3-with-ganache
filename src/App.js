@@ -16,34 +16,21 @@ function App() {
   const [balance, setbalance] = useState(null);
   const [shouldReload, reload] = useState(false);
 
+  const connectToContract = account && web3Api.contract;
   const reloadEffect = useCallback(() => reload(!shouldReload), [shouldReload]);
   const setAccountListener = (provider) => {
-    // https://docs.metamask.io/guide/ethereum-provider.html#using-the-provider
     provider.on("accountsChanged", (accounts) => {
-      // setAccount(accounts[0]);
       window.location.reload();
     });
-
-    // detected the metamask unlock or not
-    // provider._jsonRpcConnection.events.on("notification", (payload) => {
-    //   const { method } = payload;
-    //   console.log("method", method);
-    //   if (method === "metamask_unlockStateChanged") {
-    //     setAccount(null);
-    //   }
-    // });
+    provider.on("chainChanged", (accounts) => {
+      window.location.reload();
+    });
   };
   useEffect(() => {
     const loadProvider = async () => {
-      // with metamask we have an access to window.ethereum & to window.web3
-      // metamask injects a global API into website
-      // This API allows websites to request users, accounts, read data to blockchain
-      // sign messages and transactions
-
       const provider = await detectEthereumProvider();
       if (provider) {
         const contract = await loadContract("Faucet", provider);
-        // provider.request({ method: "eth_requestAccounts" });
         setAccountListener(provider);
         setWeb3Api({
           web3: new Web3(provider),
@@ -57,25 +44,6 @@ function App() {
         });
         console.error("Please, install Metamask.");
       }
-
-      // https://www.udemy.com/course/solidity-ethereum-in-react-next-js-the-complete-guide/learn/lecture/28624158#learning-tools
-      // if (window.ethereum) {
-      //   provider = window.ethereum;
-      //   try {
-      //     await provider.request({ method: "eth_requestAccounts" });
-      //   } catch (error) {
-      //     console.error("user denide account access!");
-      //   }
-      // } else if (window.web3) {
-      //   provider = window.web3.currentProvider;
-      // } else if (!process.env.production) {
-      //   provider = new Web3.providers.HttpProvider("http://localhost:7545");
-      // }
-
-      // setWeb3Api({
-      //   web3: new Web3(provider),
-      //   provider,
-      // });
     };
     loadProvider();
   }, []);
@@ -85,18 +53,8 @@ function App() {
       const accounts = await web3Api.web3.eth.getAccounts();
       setAccount(accounts[0]);
     };
-    // console.log("account", account);
     web3Api.web3 && getAccount();
   }, [web3Api, account]); // added account
-
-  // useEffect(() => {
-  //   const getBalance = async () => {
-  //     const balance = await web3Api.web3.eth.getBalance(account);
-  //     const bn_to_eth = web3Api.web3.utils.fromWei(balance, "ether");
-  //     console.log("balance", bn_to_eth);
-  //   };
-  //   account && getBalance();
-  // }, [web3Api.web3, account]);
 
   const addFunds = useCallback(async () => {
     const { contract, web3 } = web3Api;
@@ -163,19 +121,22 @@ function App() {
           <div className="balance-view is-size-2 my-4">
             Current Balance: <strong>{balance}</strong> ETH
           </div>
+          {!connectToContract && (
+            <i className="is-block"> Connect to Ganache </i>
+          )}
           <button
             className="button is-link mr-2"
-            disabled={!account}
+            disabled={!connectToContract}
             onClick={() => addFunds()}
           >
             Donate 1eth
           </button>
           <button
             className="button is-primary"
-            disabled={!account}
+            disabled={!connectToContract}
             onClick={() => withDrawFunds()}
           >
-            Withdraw
+            Withdraw 1 eth
           </button>
         </div>
       </div>
